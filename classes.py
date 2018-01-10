@@ -12,6 +12,24 @@ class para_item(object):
     def __init__(self):
         pass
 
+class var_symbol(object):
+    var_type = "VOID"
+    def __init__(self):
+        pass
+class symbol(object):
+    s_type = ""
+    def __init__(self):
+        pass
+
+class init_item(object):
+    code = ""
+    name = ""
+    def __init__(self):
+        pass
+
+var = var_symbol().__str__
+print(type(var).__name__)
+
 '''
 p = para_list()
 p.id_list.append(["hello", "hello_again"])

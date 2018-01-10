@@ -2,6 +2,7 @@ import ply.lex as lex
 reserved = {
     'for':"FOR",
     'return':"RETURN",
+    'break':"BREAK"
 }
 
 tokens = (
@@ -18,6 +19,8 @@ tokens = (
     'GE',
     'SHL',
     'SHR',
+    'DPLUS',
+    'DMINUS',
 )
 
 t_AND = r'&&'
@@ -28,8 +31,10 @@ t_LE = r"<="
 t_GE = r'>='
 t_SHL = r'<<'
 t_SHR = r'>>'
+t_DPLUS = r'\+\+'
+t_DMINUS = r'\-\-'
 
-literals = "+-*/%=|^&<>[]{}(),"
+literals = "+-*/%=|^&<>[]{}(),;"
 
 def t_TYPE(t):
     r'(int|float|char|void)'

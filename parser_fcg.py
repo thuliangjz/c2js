@@ -11,4 +11,4 @@ def p_selection_instr(p):
                         | IF '(' expression ')' instruction'''
 
 def p_expr_opt(p):
-    ''' expression_opt : expressinon | empty '''
+    ''' expression_opt : expression | empty '''

@@ -4,13 +4,15 @@ reserved = {
     'return':"RETURN",
     'break':"BREAK",
     'if':"IF",
-    'else': "ELSE"
+    'else': "ELSE",
+    'while': "WHILE"
 }
 
 tokens = (
     'TYPE',
     'ID',
     'FOR',
+    'WHILE',
     'INTEGER',
     'FRACTION',
     'OR',
@@ -26,7 +28,8 @@ tokens = (
     'IF',
     'ELSE',
     'BREAK',
-    'RETURN'
+    'RETURN',
+    'STRING',
 )
 
 t_AND = r'&&'
@@ -57,8 +60,12 @@ def t_INTEGER(t):
     r'[0-9][0-9]*'
     return t
 
+def t_STRING(t):
+    r'\".*\"'
+    return t
+
 def t_ID(t):
-    r'[a-zA-Z_][a-zA-Z0-9]*'
+    r'[a-zA-Z_][a-zA-Z0-9_]*'
     t.type = reserved.get(t.value,"ID")
     return t
 

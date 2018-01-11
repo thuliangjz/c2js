@@ -2,6 +2,7 @@ import ply.yacc as yacc
 from scanner import tokens, last_type_met
 from classes import para_list, para_item, init_item, symbol
 import scanner
+import sys
 
 precedence = (
         ("left", ','),
@@ -15,6 +16,7 @@ precedence = (
         ("left", 'SHL', 'SHR'),
         ("left", '+', '-'),
         ("left", '*', '/', '%'),
+        ("right", 'UNIOP'),
 )
 
 local_symbol_table = {} #保存的是symbol对象
@@ -24,7 +26,7 @@ last_obj_name = None
 def is_defined(name):
     global local_symbol_table
     if not local_symbol_table.get(name):
-        raise Exception("value used before defined")
+        raise Exception("%s:variable used before defined"%(name))
 
 def is_duplicate(name):
     global local_symbol_table
@@ -93,8 +95,10 @@ def p_instr(p):
                     | break_instr
                     | return_instr 
                     | for_instr
+                    | while_instr
                     | selection_instr
-                    | ';' '''
+                    | expression_opt ';'
+                    | print_instr '''
     code_concat(p)
 
 def p_instr_brac(p):
@@ -115,16 +119,32 @@ def p_init_expr_lst(p):
 #由于可能出现赋值，需要对赋值情形做类似assign的处理
 def p_init_expr(p):
     ''' init_expr : name_def '=' expression
-                    | name_def '''
-    if local_symbol_table.get(p[1]).var_type == "INT" and len(p) > 2:
+                    | name_def
+                    | array_def'''
+    if len(p) > 2 and local_symbol_table.get(p[1]).var_type == "int":
         p[0] = "%s=Math.floor(%s)"%(p[1],p[3])
     else:
         code_concat(p)
 
+def p_init_expr_str(p):
+    '''init_expr : '*' ID '=' STRING  '''
+    is_duplicate(p[2])
+    if not scanner.last_type_met == "char":
+        raise Exception("strings shall only be used with char type")
+    p[0] = "%s=%s"%(p[2], p[4])
+    a = symbol()
+    a.var_name = p[2]
+    a.var_type = 'char'
+    a.var_is_ptr = True
+    global local_symbol_table
+    local_symbol_table[a.var_name] = a
+
+
 #为了保证后面的表达式可以直接使用前面定义的变量，on the fly地把定义的变量插入local_symbol_table中,从而需要last_type_met支持
+#支持数组定义，数组将被翻译成列表，不支持数组初始化语句
 def p_name_def(p):
     ''' name_def : ID
-                | '*' ID '''
+                | '*' ID'''
     global local_symbol_table
     #检查变量定义是否重复
     a = symbol()
@@ -134,6 +154,17 @@ def p_name_def(p):
     a.var_is_ptr = len(p) == 3 
     local_symbol_table[a.var_name] = a
     p[0] = a.var_name
+
+def p_name_def_array(p):
+    ''' array_def : ID '[' INTEGER ']' '''
+    global local_symbol_table
+    a = symbol()
+    a.var_name = p[1]
+    is_duplicate(a.var_name)
+    a.var_type = scanner.last_type_met
+    a.var_is_ptr = True
+    local_symbol_table[a.var_name] = a
+    p[0] = '%s=[]'%(a.var_name)
 
 #表达式定义,包括二元运算符，括号，常量（当前只支持数字）,表达式直接复制字符串即可
 def p_expr_binop(p):
@@ -155,8 +186,8 @@ def p_expr_binop(p):
                     | expression '<' expression
                     | expression LE expression
                     | expression GE expression
-                    | expression '=' expression
-                    | expression ',' expression '''
+                    | expression ',' expression
+                    | expression '=' expression '''
     p[0] = p[1] + p[2] + p[3]
 
 #对++和--运算符的支持
@@ -165,6 +196,12 @@ def p_expr_uni(p):
                     | real_object DPLUS
                     | DMINUS real_object
                     | real_object DMINUS'''
+    code_concat(p)
+
+#支持了+与-
+def p_expr_np(p):
+    '''expression : '+' expression %prec UNIOP 
+                    | '-' expression %prec UNIOP '''
     code_concat(p)
 
 def p_expr_group(p):
@@ -195,6 +232,8 @@ def p_real_object(p):
 #赋值语句，根据赋值对象的类型对得到的值进行转化，暂时只考虑赋值为整型
 def p_assign_instr(p):
     '''assign_instr : real_object get_object_name '=' expression ';' '''
+    print("assign get!")
+    print(p[2])
     if local_symbol_table.get(p[2]).var_type == "int":
         p[0] = "%s=Math.floor(%s);"%(p[1],p[4])
     else:
@@ -224,35 +263,44 @@ def p_selection_instr(p):
                         | IF '(' expression ')' instruction ELSE '(' expression ')' instruction '''
     code_concat(p)
 
+def p_while_instr(p):
+    '''while_instr : WHILE '(' expression ')' instruction '''
+    code_concat(p)
+
+
+def p_print_instr(p):
+    ''' print_instr : ID '(' STRING ',' expression ')' ';' '''
+    if not p[1] == "printf":
+        raise Exception("only printf currently supported")
+    p[0] = 'console.log(%s);'%(p[5])
+
 
 def p_expr_opt(p):
     ''' expression_opt : expression 
                     | empty '''
     p[0] = p[1]
 
+
+def p_error(p):
+
+    # get formatted representation of stack
+    stack_state_str = ' '.join([symbol.type for symbol in parser.symstack][1:])
+
+    print('Syntax error in input! Parser State:{} {} . {}'.format(parser.state,stack_state_str,p))
+    print(p)
+
 def p_empty(p):
     '''empty :'''
     pass
 
-para_list_test = 'int Alloha (int a, int* b, float c, char d) { } '
-init_instr_test = 'int Alloha(){\
-    int * p, w;\
-    p[1 + w] = 3/2;}'
-
-parlindrome_test = 'int parlindrome (char* str, int len){\
-        int tmp, i;\
-        tmp = len / 2;\
-        for(i = 0; i < tmp; ++i){\
-            if(str[i] != str[len - 1 - i])\
-                    return 0;\
-        }\
-        return 1;}'
 
 parser = yacc.yacc()
-result = parser.parse(parlindrome_test)
-print(result)
-
-
+if len(sys.argv) < 2:
+    print("请指定一个输入文件")
+    exit()
+f = open('./%s'%(sys.argv[1]))
+code = "".join([line for line in f])
+print(parser.parse(code))
 
 
 '''

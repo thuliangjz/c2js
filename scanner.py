@@ -40,7 +40,6 @@ t_SHR = r'>>'
 t_DPLUS = r'\+\+'
 t_DMINUS = r'\-\-'
 
-literals = "+-*/%=|^&<>[]{}(),;"
 
 last_type_met = None
 
@@ -55,13 +54,15 @@ def t_FRACTION(t):
     return t
 
 def t_INTEGER(t):
-    r'[1-9][0-9]*'
+    r'[0-9][0-9]*'
     return t
 
 def t_ID(t):
     r'[a-zA-Z_][a-zA-Z0-9]*'
     t.type = reserved.get(t.value,"ID")
     return t
+
+literals = "+-*/%=|^&<>[]{}(),;"
 
 def t_newline(t):
     r'\n+'

@@ -9,15 +9,20 @@ class para_list(object):
 class para_item(object):
     var_type = "VOID"
     var_name = None
+    var_is_ptr = False
     def __init__(self):
         pass
 
 class var_symbol(object):
     var_type = "VOID"
+    var_name = None
+    var_is_ptr = False
     def __init__(self):
         pass
 class symbol(object):
-    s_type = ""
+    var_type = ""
+    var_name = None
+    var_is_ptr = False
     def __init__(self):
         pass
 

@@ -2,7 +2,9 @@ import ply.lex as lex
 reserved = {
     'for':"FOR",
     'return':"RETURN",
-    'break':"BREAK"
+    'break':"BREAK",
+    'if':"IF",
+    'else': "ELSE"
 }
 
 tokens = (
@@ -21,6 +23,10 @@ tokens = (
     'SHR',
     'DPLUS',
     'DMINUS',
+    'IF',
+    'ELSE',
+    'BREAK',
+    'RETURN'
 )
 
 t_AND = r'&&'
@@ -36,8 +42,12 @@ t_DMINUS = r'\-\-'
 
 literals = "+-*/%=|^&<>[]{}(),;"
 
+last_type_met = None
+
 def t_TYPE(t):
-    r'(int|float|char|void)'
+    r'(int|float|char|void)\b'
+    global last_type_met
+    last_type_met = t.value
     return t
 
 def t_FRACTION(t):
@@ -66,10 +76,12 @@ def t_error(t):
 lexer = lex.lex()
 
 '''
-lexer.input('123.324 314')
+lexer.input('int 123.324 314 floata')
 while True:
     tok = lexer.token()
     if not tok:
         break
     print(tok)
+
+print(last_type_met)
 '''
